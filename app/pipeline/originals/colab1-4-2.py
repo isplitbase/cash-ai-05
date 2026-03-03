@@ -20,6 +20,19 @@ import tempfile
 import openpyxl
 import formulas
 
+def read_excel_as_dataframe(file_path: str, sheet_name: str) -> pd.DataFrame:
+    """
+    Excelをdata_only=Trueで読み込み、数式は計算済み値を取得。
+    """
+    wb = load_workbook(file_path, data_only=True)
+    if sheet_name not in wb.sheetnames:
+        raise ValueError(f"シートが見つかりません: {sheet_name}")
+
+    ws = wb[sheet_name]
+    data = ws.values
+    df = pd.DataFrame(data)
+    return df
+
 def _read_excel_values_as_df(file_path: str, sheet_name: str) -> pd.DataFrame:
     """Excelシートを DataFrame 化して返す（数式セルは“計算結果”を値として取得）。
 
@@ -149,11 +162,9 @@ def build_html(file_path: str, sheet_name: str = DEFAULT_SHEET_NAME, title: str 
     data = sheet.values
     cols = next(data)[0:]
     df_raw = pd.DataFrame(data, columns=None)
+    df_raw = read_excel_as_dataframe(file_path, sheet_name)
 
-    # --- 以降は元のロジックを維持 ---
-    
-    # B5: 期間 (index 4, col 1) / C6: 単位 (index 5, col 2)
-    # 値が数値(float/int)として入ってくる可能性があるため、文字列に変換して取得
+    # ヘッダー情報
     header_info_period = str(df_raw.iloc[4, 1]) if not pd.isna(df_raw.iloc[4, 1]) else ""
     header_info_unit = str(df_raw.iloc[5, 2]) if not pd.isna(df_raw.iloc[5, 2]) else ""
 
