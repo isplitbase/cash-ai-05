@@ -161,7 +161,6 @@ def build_html(file_path: str, sheet_name: str = DEFAULT_SHEET_NAME, title: str 
     # openpyxlのデータをpandasのDataFrameに変換
     data = sheet.values
     cols = next(data)[0:]
-    df_raw = pd.DataFrame(data, columns=None)
     df_raw = read_excel_as_dataframe(file_path, sheet_name)
 
     # ヘッダー情報
