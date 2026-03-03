@@ -127,15 +127,37 @@ def build_html(file_path: str, sheet_name: str = DEFAULT_SHEET_NAME, title: str 
     """
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Excelファイルが見つかりません: {file_path}")
+    # B列(1)とC列(2)のみ抽出する前に、まずは全データを「値のみ」で読み込む
+    # engine='openpyxl' と storage_options を使うのが確実です
+    df_raw = pd.read_excel(
+        file_path, 
+        sheet_name=sheet_name, 
+        header=None, 
+        engine='openpyxl',
+        # 数式ではなく計算後の値を取得する設定
+        # 注: pd.read_excelに直接data_onlyはないため、一度openpyxlで開く手法が確実な場合もありますが
+        # 多くの環境では以下の方法、またはファイルを一度「保存」し直すことで解決します。
+    )
 
-    df_raw = _read_excel_values_as_df(file_path, sheet_name)
+    # もし上記で上手くいかない（NaNになる）場合は、以下の手順で読み込みます
+    import openpyxl
+    wb = openpyxl.load_workbook(file_path, data_only=True) # data_only=Trueが肝
+    sheet = wb[sheet_name]
+    
+    # openpyxlのデータをpandasのDataFrameに変換
+    data = sheet.values
+    cols = next(data)[0:]
+    df_raw = pd.DataFrame(data, columns=None)
 
-    # B5, C6 をメタ情報として取得（元スクリプト踏襲）
-    header_info_period = df_raw.iloc[4, 1]
-    header_info_unit = df_raw.iloc[5, 2]
+    # --- 以降は元のロジックを維持 ---
+    
+    # B5: 期間 (index 4, col 1) / C6: 単位 (index 5, col 2)
+    # 値が数値(float/int)として入ってくる可能性があるため、文字列に変換して取得
+    header_info_period = str(df_raw.iloc[4, 1]) if not pd.isna(df_raw.iloc[4, 1]) else ""
+    header_info_unit = str(df_raw.iloc[5, 2]) if not pd.isna(df_raw.iloc[5, 2]) else ""
 
-    # 7行目(index 6) 〜 51行目(index 50)、B列(1)とC列(2)
-    df = df_raw.iloc[6:51, [1, 2]].fillna("")
+    # テーブル用データ
+    df = df_raw.iloc[6:51, [1, 2]].fillna('')
 
     custom_css = """
     <style>
