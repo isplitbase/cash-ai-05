@@ -140,27 +140,6 @@ def build_html(file_path: str, sheet_name: str = DEFAULT_SHEET_NAME, title: str 
     """
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Excelファイルが見つかりません: {file_path}")
-
-# B列(1)とC列(2)のみ抽出する前に、まずは全データを「値のみ」で読み込む
-    # engine='openpyxl' と storage_options を使うのが確実です
-    df_raw = pd.read_excel(
-        file_path, 
-        sheet_name=sheet_name, 
-        header=None, 
-        engine='openpyxl',
-        # 数式ではなく計算後の値を取得する設定
-        # 注: pd.read_excelに直接data_onlyはないため、一度openpyxlで開く手法が確実な場合もありますが
-        # 多くの環境では以下の方法、またはファイルを一度「保存」し直すことで解決します。
-    )
-
-    # もし上記で上手くいかない（NaNになる）場合は、以下の手順で読み込みます
-    import openpyxl
-    wb = openpyxl.load_workbook(file_path, data_only=True) # data_only=Trueが肝
-    sheet = wb[sheet_name]
-    
-    # openpyxlのデータをpandasのDataFrameに変換
-    data = sheet.values
-    cols = next(data)[0:]
     df_raw = read_excel_as_dataframe(file_path, sheet_name)
 
     # ヘッダー情報
